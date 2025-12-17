@@ -1,7 +1,7 @@
 # springbootintroduction
 
 ## Description
-A simple training project that uses spring boot as a back-end to hide away the open anwers from Trivia API https://opentdb.com/api_config.php. 
+A simple training project that uses spring boot as a back-end to hide away the open anwers from the Trivia API https://opentdb.com/api_config.php. 
 The front-end is a simple WPF application that communicates with the back-end.
 
 ## Setup
