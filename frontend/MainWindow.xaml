@@ -13,5 +13,12 @@
         </Button>
 
         <TextBlock x:Name="txtQuestion" Height="40" FontSize="20" TextAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Stretch"> Question</TextBlock>
+
+        <StackPanel x:Name="pnlAwnsers">
+            
+        </StackPanel>
+
+        <TextBlock x:Name="txtResult" Visibility="Hidden" Height="40" FontSize="20" TextAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Stretch"> Question</TextBlock>
+
     </StackPanel>
 </Window>
