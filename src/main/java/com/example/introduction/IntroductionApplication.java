@@ -8,8 +8,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 
-import java.security.SecureRandom;
-import java.util.Base64;
+// import java.security.SecureRandom;
+// import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -37,10 +37,15 @@ public class IntroductionApplication
 		SpringApplication.run(IntroductionApplication.class, args);
 	}
 
+	final int TRIVIAS = 25;
+
 	// Token to create a unique session with open triva.
 	// We don't care too much for clearing, since it will be removed after 6 hours.
-	private String m_token;
+	//private String m_token;
 	private OpenTrivia m_currentTrivia;
+	private int m_triviaIndex = TRIVIAS;
+
+	private boolean m_fetchingTrivia = false;
 
 	// App specific entry point.
 	public IntroductionApplication()
@@ -48,16 +53,16 @@ public class IntroductionApplication
 		// For sanity sake, check whether our entry is being hit.
 		ServerLog("Start");
 
-		// Generate an unique token on startup, this will ensure an unique session with open trivia.
-		SecureRandom secureRandom = new SecureRandom(); //threadsafe
-		Base64.Encoder base64Encoder = Base64.getUrlEncoder();
+		// // Generate an unique token on startup, this will ensure an unique session with open trivia.
+		// SecureRandom secureRandom = new SecureRandom(); //threadsafe
+		// Base64.Encoder base64Encoder = Base64.getUrlEncoder();
 
-		byte[] randomBytes = new byte[24];
-    	secureRandom.nextBytes(randomBytes);
-    	m_token = base64Encoder.encodeToString(randomBytes);
+		// byte[] randomBytes = new byte[24];
+    	// secureRandom.nextBytes(randomBytes);
+    	// m_token = base64Encoder.encodeToString(randomBytes);
 
-		// Check whether a valid token was generated.
-		ServerLog(String.format("Token: %s", m_token));
+		// // Check whether a valid token was generated.
+		// ServerLog(String.format("Token: %s", m_token));
 	}
 	
 
@@ -76,27 +81,57 @@ public class IntroductionApplication
 	@GetMapping("/questionnaire")
     public String questionnaire() throws URISyntaxException, ExecutionException, InterruptedException, TimeoutException
 	{
-		var uri = URI.create("https://opentdb.com/api.php?amount=1");
-		var builder = HttpRequest.newBuilder();
-
-		HttpRequest request = builder.uri(uri).build();
-		HttpClient client = HttpClient.newHttpClient();
 		
-		CompletableFuture<HttpResponse<String>> httpFuture = null;
-		httpFuture = client.sendAsync(request, BodyHandlers.ofString());
-		
-		// Not sure how this functions knows to wait for this.
-		httpFuture.thenApply(HttpResponse::body).get(10, TimeUnit.SECONDS);
-		httpFuture.thenAccept((value) ->
+		if(m_triviaIndex < TRIVIAS)
 		{
-			ServerLog(value.body().toString());
+			m_triviaIndex++;
+			return m_currentTrivia.results[m_triviaIndex-1].question;
+		}
+		else
+		{
+			if(!m_fetchingTrivia)
+			{
+				m_fetchingTrivia = true;
 
-			ObjectMapper mapper = new ObjectMapper();
-			TypeReference<OpenTrivia> jsonRef = new TypeReference<OpenTrivia>() {};
-			m_currentTrivia = mapper.readValue(value.body(), jsonRef);
-		});
-		
-		return m_currentTrivia.results[0].question;
+				var uri = URI.create(String.format("https://opentdb.com/api.php?amount=%s", TRIVIAS));
+				var builder = HttpRequest.newBuilder();
+
+				HttpRequest request = builder.uri(uri).build();
+				HttpClient client = HttpClient.newHttpClient();
+				
+				CompletableFuture<HttpResponse<String>> httpFuture = null;
+				httpFuture = client.sendAsync(request, BodyHandlers.ofString());
+				
+				// Not sure how this functions knows to wait for this.
+				httpFuture.thenApply(HttpResponse::body).get(1, TimeUnit.SECONDS);
+				httpFuture.thenAccept((value) ->
+				{
+					ServerLog(value.body().toString());
+
+					ObjectMapper mapper = new ObjectMapper();
+					TypeReference<OpenTrivia> jsonRef = new TypeReference<OpenTrivia>() {};
+					m_currentTrivia = mapper.readValue(value.body(), jsonRef);
+				});
+			
+				// Need to check if the respose did not result in an empty result.
+				if(m_currentTrivia.results != null)
+				{
+					var result = m_currentTrivia.results;
+
+					if(result.length > 0)
+					{
+						m_triviaIndex = 1;
+						m_fetchingTrivia = false;
+						return m_currentTrivia.results[0].question;
+					}
+
+				}
+
+				m_fetchingTrivia = false;
+			}
+			
+			return "API not responding, please try again in a minute.";
+		}
     }
 
 	/** 
