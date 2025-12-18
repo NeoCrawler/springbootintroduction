@@ -28,7 +28,7 @@ import tools.jackson.databind.ObjectMapper;
 // | Tells Spring that this code describes an endpoint that should be made available over the web.
 // V 
 @RestController
-public class IntroductionApplication 
+public class IntroductionController
 {
 	// Consts
 	final int TRIVIAS = 25;
@@ -39,13 +39,13 @@ public class IntroductionApplication
 	// Entry point.
 	public static void main(String[] args) 
 	{
-		SpringApplication.run(IntroductionApplication.class, args);
+		SpringApplication.run(IntroductionController.class, args);
 	}
 
 	// ----------
 	// Members
 
-	private SecureRandom secureRandom = new SecureRandom();
+	private SecureRandom m_secureRandom = new SecureRandom();
 	private OpenTrivia m_currentTrivia = null;
 	private int m_triviaIndex = TRIVIAS;
 	private boolean m_fetchingTrivia = false;
@@ -54,7 +54,7 @@ public class IntroductionApplication
 	// Constructor
 
 	// App specific entry point.
-	public IntroductionApplication()
+	public IntroductionController()
 	{
 		// For sanity sake, check whether our entry is being hit.
 		ServerLog("Start");
@@ -181,7 +181,7 @@ public class IntroductionApplication
 
 		// Randomise the awnser.
 		
-		int rand = 2 + secureRandom.nextInt(0, trivia.incorrect_answers.length);
+		int rand = 2 + m_secureRandom.nextInt(0, trivia.incorrect_answers.length);
 
 		Pair<Integer, String> anwser = new Pair<>(1, result[1]);
 		Pair<Integer, String> target = new Pair<>(rand, result[rand]);
@@ -198,5 +198,14 @@ public class IntroductionApplication
 		System.out.println(String.format("Server | %s", value));
 	}
 
+	public TriviaObject GetTrivia()
+	{
+		if(m_currentTrivia != null)
+		{
+			return m_currentTrivia.results[m_triviaIndex-1];
+		}
+		
+		return null;
+	}
 }
 
